@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "115755062626",
+    "project_id": "physio-clinic-platform",
+    "storage_bucket": "physio-clinic-platform.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115755062626:android:ee47a22bcbc38fcfde883b",
+        "android_client_info": {
+          "package_name": "com.physioClinicPlatform.managementApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9293gkzaNxODS0irURRXQ-csGkZN5ExM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
