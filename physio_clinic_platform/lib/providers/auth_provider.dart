@@ -74,7 +74,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Stores the user profile in Firestore.
+  /// Stores the user profile in Firestore
   Future<void> register({
     required String firstName,
     required String lastName,
