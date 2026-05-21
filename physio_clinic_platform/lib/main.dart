@@ -9,6 +9,7 @@ import 'providers/auth_provider.dart' as ap;
 import 'screens/auth/phone_login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'services/user_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,9 +69,17 @@ class AuthWrapper extends StatelessWidget {
         // Not logged in → show login screen.
         if (user == null) return const PhoneLoginScreen();
 
-        // Logged in but no Firestore check yet — go straight to Home.
-        // Re-enable profile check once Firestore writes are added back.
-        return const HomeScreen();
+        // Logged in → check Firestore for existing profile.
+        return FutureBuilder<bool>(
+          future: UserService().userExists(user.uid),
+          builder: (context, profileSnapshot) {
+            if (profileSnapshot.connectionState == ConnectionState.waiting) {
+              return const _SplashLoader();
+            }
+            final hasProfile = profileSnapshot.data ?? false;
+            return hasProfile ? const HomeScreen() : const RegisterScreen();
+          },
+        );
       },
     );
   }

@@ -3,14 +3,17 @@ import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 
 enum AuthStatus { idle, loading, codeSent, authenticated, error }
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  final UserService _userService;
 
-  AuthProvider({AuthService? authService})
-      : _authService = authService ?? AuthService();
+  AuthProvider({AuthService? authService, UserService? userService})
+      : _authService = authService ?? AuthService(),
+        _userService = userService ?? UserService();
 
   AuthStatus _status = AuthStatus.idle;
   String? _errorMessage;
@@ -22,8 +25,13 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   User? get firebaseUser => _authService.currentUser;
 
-  /// No-op until Firestore is re-enabled.
-  Future<void> loadCurrentUser() async {}
+  /// Loads the current user's profile from Firestore.
+  Future<void> loadCurrentUser() async {
+    final fbUser = _authService.currentUser;
+    if (fbUser == null) return;
+    _currentUser = await _userService.getUser(fbUser.uid);
+    notifyListeners();
+  }
 
   /// Initiates phone number OTP flow.
   Future<void> sendOTP(String phoneNumber) async {
@@ -41,8 +49,8 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Verifies OTP. Always returns `false` (treat every user as new) until
-  /// Firestore profile lookup is re-enabled.
+  /// Verifies OTP and checks Firestore for an existing profile.
+  /// Returns `true` if profile exists (existing user), `false` if new user.
   Future<bool> verifyOTP(String smsCode) async {
     if (_verificationId == null) {
       _setError('Session expired. Please request a new OTP.');
@@ -55,10 +63,8 @@ class AuthProvider extends ChangeNotifier {
         verificationId: _verificationId!,
         smsCode: smsCode,
       );
-      await _authService.signInWithCredential(credential);
-      // Always send to RegisterScreen for now (no Firestore profile check).
-      _updateStatus(AuthStatus.idle);
-      return false;
+      final result = await _authService.signInWithCredential(credential);
+      return await _resolveProfile(result.user!.uid);
     } on FirebaseAuthException catch (e) {
       _setError(_mapAuthError(e));
       return false;
@@ -68,11 +74,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Stores the user profile in-memory only (Firestore write disabled for now).
+  /// Stores the user profile in Firestore.
   Future<void> register({
-    required String name,
+    required String firstName,
+    required String lastName,
     required String? email,
-    required String role,
+    required String gender,
+    required DateTime dob,
+    required String clinicId,
   }) async {
     final fbUser = _authService.currentUser;
     if (fbUser == null) {
@@ -83,14 +92,24 @@ class AuthProvider extends ChangeNotifier {
 
     final user = UserModel(
       uid: fbUser.uid,
+      clinicId: clinicId,
       phoneNumber: fbUser.phoneNumber ?? '',
-      name: name.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       email: (email == null || email.trim().isEmpty) ? null : email.trim(),
-      role: role,
+      gender: gender,
+      dob: dob,
+      role: 'patient',
       createdAt: DateTime.now(),
     );
-    _currentUser = user;
-    _updateStatus(AuthStatus.authenticated);
+
+    try {
+      await _userService.createUser(user);
+      _currentUser = user;
+      _updateStatus(AuthStatus.authenticated);
+    } catch (_) {
+      _setError('Registration failed. Please try again.');
+    }
   }
 
   Future<void> signOut() async {
@@ -112,12 +131,23 @@ class AuthProvider extends ChangeNotifier {
   /// Called automatically on Android when Firebase SMS auto-read completes.
   Future<void> _handleAutoVerification(PhoneAuthCredential credential) async {
     try {
-      await _authService.signInWithCredential(credential);
-      // Always route to RegisterScreen (no Firestore profile check).
-      _updateStatus(AuthStatus.idle);
+      final result = await _authService.signInWithCredential(credential);
+      await _resolveProfile(result.user!.uid);
     } catch (_) {
       _setError('Auto-verification failed. Please enter the OTP manually.');
     }
+  }
+
+  /// Checks Firestore for an existing profile. Sets status accordingly.
+  Future<bool> _resolveProfile(String uid) async {
+    final exists = await _userService.userExists(uid);
+    if (exists) {
+      _currentUser = await _userService.getUser(uid);
+      _updateStatus(AuthStatus.authenticated);
+    } else {
+      _updateStatus(AuthStatus.idle);
+    }
+    return exists;
   }
 
   void _updateStatus(AuthStatus s) {

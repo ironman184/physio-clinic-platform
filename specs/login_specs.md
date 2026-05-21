@@ -2,9 +2,7 @@
 
 ## Overview
 
-Phone-number-based authentication with OTP verification, backed by **Firebase Auth**. New users complete a one-time registration form after their first successful OTP verification. The collected profile data is currently stored **in-memory only** (inside `AuthProvider`).
-
-> **Firestore persistence is disabled.** `UserService` exists and is ready but is not called yet. See [Re-enabling Firestore](#re-enabling-firestore) for what to restore when needed.
+Phone-number-based authentication with OTP verification, backed by **Firebase Auth**. New users complete a one-time registration form after their first successful OTP verification. The collected profile data is persisted in **Cloud Firestore**.
 
 ---
 
@@ -13,9 +11,10 @@ Phone-number-based authentication with OTP verification, backed by **Firebase Au
 | Concern | Choice |
 |---------|--------|
 | Authentication | Firebase Auth — Phone / SMS OTP |
-| Database | Cloud Firestore _(disabled — in-memory for now)_ |
+| Database | Cloud Firestore |
 | State management | `provider ^6.1.2` (`ChangeNotifier`) |
 | Phone field UI | `intl_phone_field ^3.2.0` |
+| Date formatting | `intl ^0.20.2` |
 | Navigation | Imperative (`Navigator.pushAndRemoveUntil`) |
 
 ---
@@ -32,7 +31,7 @@ lib/
 │
 ├── services/
 │   ├── auth_service.dart              # Firebase Auth thin wrapper
-│   └── user_service.dart              # Firestore CRUD (singleton) — ready, not yet called
+│   └── user_service.dart              # Firestore CRUD (singleton)
 │
 ├── providers/
 │   └── auth_provider.dart             # Business logic + state (ChangeNotifier)
@@ -56,8 +55,11 @@ Cold start
 AuthWrapper (StreamBuilder on authStateChanges)
     ├── No Firebase user  ──────────────────────► PhoneLoginScreen
     │
-    └── Firebase user (any) ───────────────────► HomeScreen
-          (no Firestore profile check — disabled)
+    └── Firebase user exists
+          │
+          └── FutureBuilder: UserService().userExists(uid)
+                ├── Profile found   ──────────► HomeScreen
+                └── No profile      ──────────► RegisterScreen
 
 
 PhoneLoginScreen
@@ -68,14 +70,14 @@ OtpVerificationScreen
     │  6-box OTP input, 60 s resend countdown
     │  Android: auto-verified silently in background
     │
-    └── OTP valid ────────────────────────────► RegisterScreen (stack cleared)
-          (always new-user path — no Firestore lookup)
+    ├── OTP valid + Firestore profile exists ─► HomeScreen (stack cleared)
+    └── OTP valid + no profile ───────────────► RegisterScreen (stack cleared)
 
 
 RegisterScreen
-    │  Full name (required), email (optional), role (Patient | Physiotherapist)
+    │  First Name*, Last Name*, Email, Gender*, DOB*, Clinic
     │  tap "Complete Registration"
-    │  profile saved in-memory (AuthProvider._currentUser)
+    │  profile saved to Firestore
     ▼
 HomeScreen  (stack cleared)
 ```
@@ -86,27 +88,36 @@ HomeScreen  (stack cleared)
 
 ### `UserModel`  _(lib/models/user_model.dart)_
 
-Currently lives **in-memory** inside `AuthProvider._currentUser`. Firestore schema is defined and ready — `toMap()` / `fromMap()` are implemented — but writes/reads are disabled.
+**Firestore collection:** `users/{uid}`
 
-**Planned Firestore collection:** `users/{uid}`
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `phoneNumber` | `String` | E.164 format, e.g. `+919876543210` |
-| `name` | `String` | Required |
-| `email` | `String?` | Optional |
-| `role` | `String` | `"patient"` \| `"physiotherapist"` |
-| `createdAt` | `Timestamp` | Set once on registration |
+| Field | Firestore key | Type | Notes |
+|-------|--------------|------|-------|
+| User ID | _(document ID)_ | `String` | Firebase Auth UID |
+| Clinic ID | `clinicId` | `String` | Mapped from demo clinic name |
+| Mobile Number | `phoneNumber` | `String` | E.164 format, e.g. `+919876543210` |
+| First Name | `firstName` | `String` | Required |
+| Last Name | `lastName` | `String` | Required |
+| Email | `email` | `String?` | Optional |
+| Gender | `gender` | `String` | `"male"` / `"female"` / `"other"` |
+| DOB | `dob` | `Timestamp` | Date of birth |
+| Role | `role` | `String` | `"patient"` (hardcoded for now) |
+| Created At | `createdAt` | `Timestamp` | Set once on registration |
 
 ```dart
 // lib/models/user_model.dart
 class UserModel {
   final String uid;
+  final String clinicId;
   final String phoneNumber;
-  final String name;
+  final String firstName;
+  final String lastName;
   final String? email;
+  final String gender;
+  final DateTime dob;
   final String role;
   final DateTime createdAt;
+
+  String get fullName => '$firstName $lastName';
 }
 ```
 
@@ -134,12 +145,12 @@ Future<void>  signOut()
 
 ### `UserService`  _(lib/services/user_service.dart)_
 
-Singleton (`factory` constructor). Wraps Firestore `users` collection. **Implemented but not called yet.**
+Singleton (`factory` constructor). Wraps Firestore `users` collection.
 
 ```dart
-Future<bool>       userExists(String uid)   // ready
-Future<UserModel?> getUser(String uid)      // ready
-Future<void>       createUser(UserModel user) // ready
+Future<bool>       userExists(String uid)
+Future<UserModel?> getUser(String uid)
+Future<void>       createUser(UserModel user)
 ```
 
 ---
@@ -162,12 +173,12 @@ enum AuthStatus { idle, loading, codeSent, authenticated, error }
 |--------|------|-------------|
 | `status` | `AuthStatus` | Current state |
 | `errorMessage` | `String?` | Last error, if any |
-| `currentUser` | `UserModel?` | In-memory profile (set after `register()`) |
+| `currentUser` | `UserModel?` | Profile loaded from Firestore |
 | `firebaseUser` | `User?` | Raw Firebase user |
 | `sendOTP(phone)` | `Future<void>` | Initiates SMS verification |
-| `verifyOTP(code)` | `Future<bool>` | Always `false` for now (always → RegisterScreen) |
-| `register(...)` | `Future<void>` | Stores profile in-memory; no Firestore write |
-| `loadCurrentUser()` | `Future<void>` | No-op (Firestore disabled) |
+| `verifyOTP(code)` | `Future<bool>` | Returns `true` if profile exists in Firestore |
+| `register(...)` | `Future<void>` | Writes profile to Firestore |
+| `loadCurrentUser()` | `Future<void>` | Loads profile from Firestore |
 | `signOut()` | `Future<void>` | Signs out + resets state |
 | `clearError()` | `void` | Resets error state |
 
@@ -186,21 +197,25 @@ codeSent
  ▼
 loading ──exception──► error
  │
- └── always ──────────► idle  (screen navigates to RegisterScreen)
-       (no Firestore lookup — all users treated as new)
+ ├── Firestore profile exists ──► authenticated (_currentUser loaded)
+ └── no profile ────────────────► idle (screen navigates to RegisterScreen)
 
 idle (on RegisterScreen)
  │  register()
  ▼
-_currentUser set in-memory
- │
- └── always ──────────► authenticated
-       (no Firestore write)
+loading
+ │  Firestore write succeeds
+ ▼
+authenticated (_currentUser set)
 ```
 
 #### Android auto-verification
 
-`_handleAutoVerification(PhoneAuthCredential)` is passed as `onAutoVerified` to Firebase. It calls `signInWithCredential` and sets status to `idle`, routing the user to `RegisterScreen`. `OtpVerificationScreen` adds a `ChangeNotifier` listener (`addListener`) to detect `idle` status and navigate without the user tapping "Verify".
+`_handleAutoVerification(PhoneAuthCredential)` is passed as `onAutoVerified` to Firebase. It calls `signInWithCredential`, then checks Firestore via `_resolveProfile`. The status is set to `authenticated` (existing user) or `idle` (new user). `OtpVerificationScreen` adds a `ChangeNotifier` listener (`addListener`) to detect the status change and navigate accordingly.
+
+#### Double-navigation guard
+
+`OtpVerificationScreen` uses a `_hasNavigated` boolean flag. Both `_onProviderChanged` (listener) and `_verify()` (after await) can trigger navigation after a successful verification — since `notifyListeners()` is synchronous, the listener fires _inside_ `verifyOTP` before it returns. The `_hasNavigated` flag ensures only the first call to `_navigateAfterVerification` actually pushes a route.
 
 ---
 
@@ -218,33 +233,40 @@ _currentUser set in-memory
 - Auto-submits when all 6 digits are filled
 - 60-second countdown timer; "Resend OTP" button enabled after expiry
 - Listens to provider via `addListener` / `removeListener` for Android auto-verification
-- On success: `Navigator.pushAndRemoveUntil` to `HomeScreen` or `RegisterScreen`
+- On success: `Navigator.pushAndRemoveUntil` to `HomeScreen` (existing) or `RegisterScreen` (new)
+- `_hasNavigated` flag prevents double-push from listener + _verify() race
 
 ### `RegisterScreen`
 
-- `TextFormField` for name (required, min 2 chars) and email (optional, regex validated)
-- `SegmentedButton<String>` for role selection (`patient` / `physiotherapist`)
+- `TextFormField` for First Name* (required, min 2 chars) and Last Name* (required, min 2 chars)
+- `TextFormField` for Email (optional, regex validated)
+- `DropdownButtonFormField` for Gender* (`Male`, `Female`, `Other`)
+- Date picker for DOB* (via `showDatePicker`)
+- `DropdownButtonFormField` for Clinic (optional) — 3 demo clinics with hardcoded IDs
+- Role is hardcoded to `"patient"`
 - No back navigation (`automaticallyImplyLeading: false`)
-- Calls `provider.register(...)` — stores profile in-memory → on `authenticated` navigates to `HomeScreen`
+- Calls `provider.register(...)` → Firestore write → on `authenticated` navigates to `HomeScreen`
 
 ### `HomeScreen`
 
-- `initState` calls `provider.loadCurrentUser()` (currently a no-op)
-- Displays name, role chip, phone number, and optional email from `provider.currentUser`
+- `initState` calls `provider.loadCurrentUser()` to load Firestore profile
+- Displays `fullName` (firstName + lastName), role chip, phone number, and optional email
 - Sign-out clears provider state and returns to `PhoneLoginScreen`
 
 ---
 
 ## `AuthWrapper`  _(main.dart)_
 
-Handles cold-start and session-restore. Firestore profile check is disabled.
+Handles cold-start and session-restore with Firestore profile check.
 
 ```dart
 StreamBuilder<User?>(authStateChanges)
   ├── waiting       → _SplashLoader
   ├── user == null  → PhoneLoginScreen
-  └── user != null  → HomeScreen
-        (no FutureBuilder / userExists call)
+  └── user != null  → FutureBuilder(UserService().userExists(uid))
+        ├── waiting    → _SplashLoader
+        ├── hasProfile → HomeScreen
+        └── noProfile  → RegisterScreen
 ```
 
 ---
@@ -288,81 +310,5 @@ service cloud.firestore {
 
 ## Testing Notes
 
-- Inject mock `AuthService` into `AuthProvider` constructor for unit tests (`UserService` injection point is preserved for when Firestore is re-enabled)
+- Inject mock `AuthService` and `UserService` into `AuthProvider` constructor for unit tests
 - Use Firebase's **phone auth test numbers** (Firebase Console → Authentication → Sign-in method → Phone → Test phone numbers) to test OTP flow without real SMS during development
-
----
-
-## Re-enabling Firestore
-
-All Firestore code is written and ready. Three targeted changes restore full persistence:
-
-### 1. `lib/providers/auth_provider.dart`
-
-**Add back `UserService` dependency:**
-```dart
-// Constructor
-AuthProvider({AuthService? authService, UserService? userService})
-    : _authService = authService ?? AuthService(),
-      _userService = userService ?? UserService();
-```
-
-**Restore `verifyOTP()` — replace the sign-in block with:**
-```dart
-final result = await _authService.signInWithCredential(credential);
-return await _resolveProfile(result.user!.uid);
-```
-
-**Restore `register()` — add Firestore write before setting `_currentUser`:**
-```dart
-await _userService.createUser(user);
-```
-
-**Restore `loadCurrentUser()`:**
-```dart
-Future<void> loadCurrentUser() async {
-  final fbUser = _authService.currentUser;
-  if (fbUser == null) return;
-  _currentUser = await _userService.getUser(fbUser.uid);
-  notifyListeners();
-}
-```
-
-**Restore `_resolveProfile()` private method:**
-```dart
-Future<bool> _resolveProfile(String uid) async {
-  final exists = await _userService.userExists(uid);
-  if (exists) {
-    _currentUser = await _userService.getUser(uid);
-    _updateStatus(AuthStatus.authenticated);
-  } else {
-    _updateStatus(AuthStatus.idle);
-  }
-  return exists;
-}
-```
-
-### 2. `lib/main.dart`
-
-**Restore `AuthWrapper` Firestore branch:**
-```dart
-// Add import
-import 'services/user_service.dart';
-
-// Replace HomeScreen() direct return with:
-return FutureBuilder<bool>(
-  future: UserService().userExists(user.uid),
-  builder: (context, profileSnapshot) {
-    if (profileSnapshot.connectionState == ConnectionState.waiting) {
-      return const _SplashLoader();
-    }
-    final hasProfile = profileSnapshot.data ?? false;
-    return hasProfile ? const HomeScreen() : const RegisterScreen();
-  },
-);
-```
-
-### 3. Firebase Console
-
-- Firestore Database must exist (test mode or with the security rules above)
-- SHA-1 fingerprint must be registered for Android

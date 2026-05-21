@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  user.name,
+                  user.fullName,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -77,16 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 Chip(
                   avatar: Icon(
-                    user.role == 'physiotherapist'
-                        ? Icons.medical_services_outlined
-                        : Icons.person,
+                    Icons.person,
                     size: 16,
                     color: theme.colorScheme.onPrimary,
                   ),
                   label: Text(
-                    user.role == 'physiotherapist'
-                        ? 'Physiotherapist'
-                        : 'Patient',
+                    user.role[0].toUpperCase() + user.role.substring(1),
                     style: TextStyle(color: theme.colorScheme.onPrimary),
                   ),
                   backgroundColor: theme.colorScheme.primary,

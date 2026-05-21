@@ -23,6 +23,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   int _secondsLeft = 60;
   bool _canResend = false;
+  bool _hasNavigated = false;
   Timer? _timer;
   ap.AuthProvider? _authProvider;
 
@@ -98,7 +99,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   void _navigateAfterVerification({required bool isExistingUser}) {
-    if (!mounted) return;
+    if (!mounted || _hasNavigated) return;
+    _hasNavigated = true;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -112,7 +114,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   /// Called when Android auto-verification updates the provider state.
   void _onProviderChanged() {
     if (!mounted) return;
-    final status = _authProvider.status;
+    final status = _authProvider?.status;
     if (status == ap.AuthStatus.authenticated) {
       _navigateAfterVerification(isExistingUser: true);
     } else if (status == ap.AuthStatus.idle) {
