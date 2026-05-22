@@ -100,6 +100,7 @@ class AuthProvider extends ChangeNotifier {
       gender: gender,
       dob: dob,
       role: 'patient',
+      status: 'active',
       createdAt: DateTime.now(),
     );
 

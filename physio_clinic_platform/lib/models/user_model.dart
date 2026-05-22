@@ -10,6 +10,7 @@ class UserModel {
   final String gender;
   final DateTime dob;
   final String role;
+  final String status;
   final DateTime createdAt;
 
   const UserModel({
@@ -22,6 +23,7 @@ class UserModel {
     required this.gender,
     required this.dob,
     required this.role,
+    required this.status,
     required this.createdAt,
   });
 
@@ -40,6 +42,7 @@ class UserModel {
           ? (map['dob'] as Timestamp).toDate()
           : DateTime.now(),
       role: map['role'] as String? ?? 'patient',
+      status: map['status'] as String? ?? 'active',
       createdAt: map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -55,6 +58,7 @@ class UserModel {
         'gender': gender,
         'dob': Timestamp.fromDate(dob),
         'role': role,
+        'status': status,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 }
