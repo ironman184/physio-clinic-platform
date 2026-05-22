@@ -49,12 +49,12 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Verifies OTP and checks Firestore for an existing profile.
-  /// Returns `true` if profile exists (existing user), `false` if new user.
-  Future<bool> verifyOTP(String smsCode) async {
+  /// Verifies OTP and signs the user in.
+  /// AuthWrapper handles routing based on profile existence.
+  Future<void> verifyOTP(String smsCode) async {
     if (_verificationId == null) {
       _setError('Session expired. Please request a new OTP.');
-      return false;
+      return;
     }
     _updateStatus(AuthStatus.loading);
 
@@ -63,14 +63,14 @@ class AuthProvider extends ChangeNotifier {
         verificationId: _verificationId!,
         smsCode: smsCode,
       );
-      final result = await _authService.signInWithCredential(credential);
-      return await _resolveProfile(result.user!.uid);
+      await _authService.signInWithCredential(credential);
+      // AuthWrapper reacts to authStateChanges() and handles routing.
+      _updateStatus(AuthStatus.authenticated);
+
     } on FirebaseAuthException catch (e) {
       _setError(_mapAuthError(e));
-      return false;
     } catch (_) {
       _setError('Verification failed. Please try again.');
-      return false;
     }
   }
 
@@ -131,23 +131,12 @@ class AuthProvider extends ChangeNotifier {
   /// Called automatically on Android when Firebase SMS auto-read completes.
   Future<void> _handleAutoVerification(PhoneAuthCredential credential) async {
     try {
-      final result = await _authService.signInWithCredential(credential);
-      await _resolveProfile(result.user!.uid);
+      await _authService.signInWithCredential(credential);
+      _updateStatus(AuthStatus.authenticated);
+      // AuthWrapper reacts to authStateChanges() and handles routing.
     } catch (_) {
       _setError('Auto-verification failed. Please enter the OTP manually.');
     }
-  }
-
-  /// Checks Firestore for an existing profile. Sets status accordingly.
-  Future<bool> _resolveProfile(String uid) async {
-    final exists = await _userService.userExists(uid);
-    if (exists) {
-      _currentUser = await _userService.getUser(uid);
-      _updateStatus(AuthStatus.authenticated);
-    } else {
-      _updateStatus(AuthStatus.idle);
-    }
-    return exists;
   }
 
   void _updateStatus(AuthStatus s) {

@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart' as ap;
-import '../home_screen.dart';
-import 'register_screen.dart';
+import '../../main.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -98,15 +97,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  void _navigateAfterVerification({required bool isExistingUser}) {
+  void _navigateAfterVerification() {
     if (!mounted || _hasNavigated) return;
     _hasNavigated = true;
+    // Let AuthWrapper decide whether to show HomeScreen or RegisterScreen.
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) =>
-            isExistingUser ? const HomeScreen() : const RegisterScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AuthWrapper()),
       (_) => false,
     );
   }
@@ -116,10 +113,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (!mounted) return;
     final status = _authProvider?.status;
     if (status == ap.AuthStatus.authenticated) {
-      _navigateAfterVerification(isExistingUser: true);
+      _navigateAfterVerification();
     } else if (status == ap.AuthStatus.idle) {
       // idle after auth = new user (no profile yet)
-      _navigateAfterVerification(isExistingUser: false);
+      _navigateAfterVerification();
     }
   }
 
@@ -133,7 +130,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     final provider = context.read<ap.AuthProvider>();
-    final isExisting = await provider.verifyOTP(otp);
+    await provider.verifyOTP(otp);
 
     if (!mounted) return;
 
@@ -144,7 +141,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    _navigateAfterVerification(isExistingUser: isExisting);
+    _navigateAfterVerification();
   }
 
   Future<void> _resendOTP() async {

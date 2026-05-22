@@ -61,6 +61,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showError('Please select your date of birth.');
       return;
     }
+    if (_selectedClinic == null) {
+      _showError('Please select a clinic.');
+      return;
+    }
 
     final provider = context.read<ap.AuthProvider>();
     await provider.register(
@@ -71,9 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           : _emailController.text.trim(),
       gender: _selectedGender!.toLowerCase(),
       dob: _selectedDob!,
-      clinicId: _selectedClinic != null
-          ? kDemoClinics[_selectedClinic]!
-          : '',
+      clinicId: kDemoClinics[_selectedClinic]!,
     );
 
     if (!mounted) return;
@@ -258,7 +260,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     DropdownButtonFormField<String>(
                       value: _selectedClinic,
                       decoration: InputDecoration(
-                        labelText: 'Clinic (optional)',
+                        labelText: 'Clinic *',
                         prefixIcon:
                             const Icon(Icons.local_hospital_outlined),
                         border: OutlineInputBorder(
@@ -273,6 +275,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _selectedClinic = v),
+                      validator: (v) =>
+                          v == null ? 'Please select a clinic.' : null,
                     ),
                     const SizedBox(height: 44),
                     // ── Submit ─────────────────────────────────────────

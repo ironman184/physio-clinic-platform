@@ -136,7 +136,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     width: double.infinity,
                     height: 52,
                     child: FilledButton(
-                      onPressed: isLoading ? null : _sendOTP,                      style: FilledButton.styleFrom(
+                      onPressed: isLoading ? null : _sendOTP,                      
+                      style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),

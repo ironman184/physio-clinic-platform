@@ -24,7 +24,7 @@ After a new user verifies their phone number via OTP, they are routed to the **R
 | 3 | Email | `TextFormField` | No | Regex: `^[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}$` |
 | 4 | Gender | `DropdownButtonFormField` | Yes | Must select one of: Male, Female, Other |
 | 5 | Date of Birth | `showDatePicker` (tap-to-open) | Yes | Must be selected; range: 1920 – today |
-| 6 | Clinic | `DropdownButtonFormField` | No | Optional; select from demo list |
+| 6 | Clinic | `DropdownButtonFormField` | Yes | Must select one from demo list |
 
 ---
 
@@ -47,7 +47,7 @@ Defined as `kDemoClinics` constant map in `register_screen.dart`.
 
 | Key | Source | Type |
 |-----|--------|------|
-| `clinicId` | Selected clinic → `kDemoClinics[name]` (or `""` if none) | `String` |
+| `clinicId` | Selected clinic → `kDemoClinics[name]` | `String` |
 | `phoneNumber` | `FirebaseAuth.instance.currentUser.phoneNumber` | `String` |
 | `firstName` | Form input | `String` |
 | `lastName` | Form input | `String` |
@@ -74,6 +74,9 @@ RegisterScreen
     │
     ├── DOB not selected
     │     └── SnackBar: "Please select your date of birth."
+    │
+    ├── Clinic not selected
+    │     └── SnackBar: "Please select a clinic."
     │
     └── All valid
           │
