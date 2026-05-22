@@ -23,6 +23,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   int _secondsLeft = 60;
   bool _canResend = false;
   bool _hasNavigated = false;
+  bool _isVerifying = false;
   Timer? _timer;
   ap.AuthProvider? _authProvider;
 
@@ -111,11 +112,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   /// Called when Android auto-verification updates the provider state.
   void _onProviderChanged() {
     if (!mounted) return;
-    final status = _authProvider?.status;
-    if (status == ap.AuthStatus.authenticated) {
-      _navigateAfterVerification();
-    } else if (status == ap.AuthStatus.idle) {
-      // idle after auth = new user (no profile yet)
+    if (_authProvider?.status == ap.AuthStatus.authenticated) {
       _navigateAfterVerification();
     }
   }
@@ -123,16 +120,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   // ── Actions ────────────────────────────────────────────────────────────────
 
   Future<void> _verify() async {
+    if (_isVerifying) return;
     final otp = _otp;
     if (otp.length < 6) {
       _showError('Please enter the complete 6-digit OTP.');
       return;
     }
+    _isVerifying = true;
 
     final provider = context.read<ap.AuthProvider>();
     await provider.verifyOTP(otp);
 
     if (!mounted) return;
+    _isVerifying = false;
 
     if (provider.status == ap.AuthStatus.error) {
       _clearBoxes();

@@ -51,8 +51,25 @@ class MyApp extends StatelessWidget {
 
 /// Decides the initial route based on Firebase auth state + Firestore profile.
 /// This handles cold-start and session-restore scenarios automatically.
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  // Cached so FutureBuilder doesn't re-fire on every rebuild.
+  String? _cachedUid;
+  Future<bool>? _profileFuture;
+
+  Future<bool> _getProfileFuture(String uid) {
+    if (uid != _cachedUid) {
+      _cachedUid = uid;
+      _profileFuture = UserService().userExists(uid);
+    }
+    return _profileFuture!;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,11 +84,16 @@ class AuthWrapper extends StatelessWidget {
         final user = authSnapshot.data;
 
         // Not logged in → show login screen.
-        if (user == null) return const PhoneLoginScreen();
+        if (user == null) {
+          // Clear cache so next login re-checks Firestore.
+          _cachedUid = null;
+          _profileFuture = null;
+          return const PhoneLoginScreen();
+        }
 
-        // Logged in → check Firestore for existing profile.
+        // Logged in → check Firestore for existing profile (cached per uid).
         return FutureBuilder<bool>(
-          future: UserService().userExists(user.uid),
+          future: _getProfileFuture(user.uid),
           builder: (context, profileSnapshot) {
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
               return const _SplashLoader();

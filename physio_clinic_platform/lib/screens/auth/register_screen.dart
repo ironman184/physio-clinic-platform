@@ -24,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _dobController = TextEditingController();
 
   String? _selectedGender;
   DateTime? _selectedDob;
@@ -37,6 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -48,7 +50,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       firstDate: DateTime(1920),
       lastDate: now,
     );
-    if (picked != null) setState(() => _selectedDob = picked);
+    if (picked != null) {
+      setState(() {
+        _selectedDob = picked;
+        _dobController.text = DateFormat('dd MMM yyyy').format(picked);
+      });
+    }
   }
 
   Future<void> _register() async {
@@ -238,17 +245,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            hintText: _selectedDob != null
-                                ? DateFormat('dd MMM yyyy')
-                                    .format(_selectedDob!)
-                                : 'Select date',
+                            hintText: 'Select date',
                           ),
-                          controller: TextEditingController(
-                            text: _selectedDob != null
-                                ? DateFormat('dd MMM yyyy')
-                                    .format(_selectedDob!)
-                                : '',
-                          ),
+                          controller: _dobController,
                           validator: (_) => _selectedDob == null
                               ? 'Please select your date of birth.'
                               : null,

@@ -64,7 +64,7 @@ class AuthProvider extends ChangeNotifier {
         smsCode: smsCode,
       );
       await _authService.signInWithCredential(credential);
-      // AuthWrapper reacts to authStateChanges() and handles routing.
+      _verificationId = null; // OTP flow complete.
       _updateStatus(AuthStatus.authenticated);
 
     } on FirebaseAuthException catch (e) {
@@ -132,6 +132,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _handleAutoVerification(PhoneAuthCredential credential) async {
     try {
       await _authService.signInWithCredential(credential);
+      _verificationId = null; // OTP flow complete.
       _updateStatus(AuthStatus.authenticated);
       // AuthWrapper reacts to authStateChanges() and handles routing.
     } catch (_) {
