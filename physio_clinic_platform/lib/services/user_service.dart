@@ -24,4 +24,15 @@ class UserService {
   Future<void> createUser(UserModel user) {
     return _db.collection(_collection).doc(user.uid).set(user.toMap());
   }
+
+  /// Real-time stream of a user's profile document.
+  /// Emits `null` when the document does not exist.
+  Stream<UserModel?> userStream(String uid) {
+    return _db.collection(_collection).doc(uid).snapshots().map(
+          (snap) =>
+              snap.exists && snap.data() != null
+                  ? UserModel.fromMap(uid, snap.data()!)
+                  : null,
+        );
+  }
 }

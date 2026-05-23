@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart' as ap;
-import '../../main.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -22,7 +21,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   int _secondsLeft = 60;
   bool _canResend = false;
-  bool _hasNavigated = false;
   bool _isVerifying = false;
   Timer? _timer;
   ap.AuthProvider? _authProvider;
@@ -35,7 +33,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     _startCountdown();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _authProvider = context.read<ap.AuthProvider>();
-      // Listen for Android auto-verification completing in the background.
+      // Listen for Android auto-verification errors.
       _authProvider?.addListener(_onProviderChanged);
     });
   }
@@ -98,23 +96,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  void _navigateAfterVerification() {
-    if (!mounted || _hasNavigated) return;
-    _hasNavigated = true;
-    // Let AuthWrapper decide whether to show HomeScreen or RegisterScreen.
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const AuthWrapper()),
-      (_) => false,
-    );
-  }
-
   /// Called when Android auto-verification updates the provider state.
   void _onProviderChanged() {
     if (!mounted) return;
-    if (_authProvider?.status == ap.AuthStatus.authenticated) {
-      _navigateAfterVerification();
+    if (_authProvider?.status == ap.AuthStatus.error) {
+      _showError(_authProvider?.errorMessage ?? 'Auto-verification failed.');
+      _authProvider?.clearError();
     }
+    // On success (authenticated), AuthWrapper swaps the entire AuthFlow out.
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -128,30 +117,28 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
     _isVerifying = true;
 
-    final provider = context.read<ap.AuthProvider>();
-    await provider.verifyOTP(otp);
+    await _authProvider?.verifyOTP(otp);
 
     if (!mounted) return;
     _isVerifying = false;
 
-    if (provider.status == ap.AuthStatus.error) {
+    if (_authProvider?.status == ap.AuthStatus.error) {
       _clearBoxes();
-      _showError(provider.errorMessage ?? 'Verification failed.');
-      provider.clearError();
+      _showError(_authProvider?.errorMessage ?? 'Verification failed.');
+      _authProvider?.clearError();
       return;
     }
 
-    _navigateAfterVerification();
+    // On success, AuthWrapper detects authStateChanges() and swaps the flow.
   }
 
   Future<void> _resendOTP() async {
     if (!_canResend) return;
-    final provider = context.read<ap.AuthProvider>();
-    await provider.sendOTP(widget.phoneNumber);
+    await _authProvider?.sendOTP(widget.phoneNumber);
 
     if (!mounted) return;
 
-    if (provider.status == ap.AuthStatus.codeSent) {
+    if (_authProvider?.status == ap.AuthStatus.codeSent) {
       _clearBoxes();
       _startCountdown();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,9 +147,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } else if (provider.status == ap.AuthStatus.error) {
-      _showError(provider.errorMessage ?? 'Failed to resend OTP.');
-      provider.clearError();
+    } else if (_authProvider?.status == ap.AuthStatus.error) {
+      _showError(_authProvider?.errorMessage ?? 'Failed to resend OTP.');
+      _authProvider?.clearError();
     }
   }
 

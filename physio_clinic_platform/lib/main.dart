@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'models/user_model.dart';
 import 'providers/auth_provider.dart' as ap;
-import 'screens/auth/phone_login_screen.dart';
-import 'screens/auth/register_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/flows/auth_flow.dart';
+import 'screens/flows/main_app_flow.dart';
+import 'screens/flows/registration_flow.dart';
 import 'services/user_service.dart';
 
 void main() async {
@@ -59,47 +60,54 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  // Cached so FutureBuilder doesn't re-fire on every rebuild.
+  // Cached so StreamBuilder doesn't re-subscribe on rebuilds.
+  late final Stream<User?> _authStream;
   String? _cachedUid;
-  Future<bool>? _profileFuture;
+  Stream<UserModel?>? _profileStream;
 
-  Future<bool> _getProfileFuture(String uid) {
+  @override
+  void initState() {
+    super.initState();
+    _authStream = FirebaseAuth.instance.authStateChanges();
+  }
+
+  Stream<UserModel?> _getProfileStream(String uid) {
     if (uid != _cachedUid) {
       _cachedUid = uid;
-      _profileFuture = UserService().userExists(uid);
+      _profileStream = UserService().userStream(uid);
     }
-    return _profileFuture!;
+    return _profileStream!;
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: _authStream,
       builder: (context, authSnapshot) {
-        // Waiting for Firebase to restore the auth state.
         if (authSnapshot.connectionState == ConnectionState.waiting) {
           return const _SplashLoader();
         }
 
         final user = authSnapshot.data;
 
-        // Not logged in → show login screen.
         if (user == null) {
-          // Clear cache so next login re-checks Firestore.
           _cachedUid = null;
-          _profileFuture = null;
-          return const PhoneLoginScreen();
+          _profileStream = null;
+          return const AuthFlow();
         }
 
-        // Logged in → check Firestore for existing profile (cached per uid).
-        return FutureBuilder<bool>(
-          future: _getProfileFuture(user.uid),
+        return StreamBuilder<UserModel?>(
+          stream: _getProfileStream(user.uid),
           builder: (context, profileSnapshot) {
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
               return const _SplashLoader();
             }
-            final hasProfile = profileSnapshot.data ?? false;
-            return hasProfile ? const HomeScreen() : const RegisterScreen();
+            if (profileSnapshot.hasError) {
+              return const _SplashLoader();
+            }
+            return profileSnapshot.data != null
+                ? const MainAppFlow()
+                : const RegistrationFlow();
           },
         );
       },

@@ -20,33 +20,29 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Set up listener after the first frame so context is available.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _authProvider = context.read<ap.AuthProvider>();
-      _authProvider!.addListener(_onAuthStateChanged);
+      _authProvider!.addListener(_onProviderChanged);
     });
   }
 
   @override
   void dispose() {
-    _authProvider?.removeListener(_onAuthStateChanged);
+    _authProvider?.removeListener(_onProviderChanged);
     super.dispose();
   }
 
-  /// Reacts to provider changes so navigation happens as soon as
-  /// onCodeSent fires — even if the verifyPhoneNumber Future has
-  /// already returned (race condition on Android).
-  void _onAuthStateChanged() {
+  void _onProviderChanged() {
     if (!mounted || _authProvider == null) return;
     switch (_authProvider!.status) {
       case ap.AuthStatus.codeSent:
-        _authProvider!.removeListener(_onAuthStateChanged);
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                OtpVerificationScreen(phoneNumber: _completePhoneNumber),
+            builder: (_) => OtpVerificationScreen(
+              phoneNumber: _completePhoneNumber,
+            ),
           ),
         );
       case ap.AuthStatus.error:
@@ -59,7 +55,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   void _sendOTP() {
     if (!_formKey.currentState!.validate()) return;
-    // Fire and forget — navigation is handled reactively by _onAuthStateChanged.
     _authProvider?.sendOTP(_completePhoneNumber);
   }
 

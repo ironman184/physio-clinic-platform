@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart' as ap;
-import '../home_screen.dart';
 
 /// Hardcoded clinic name → ID mapping (demo).
 const Map<String, String> kDemoClinics = {
@@ -87,16 +86,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!mounted) return;
 
-    if (provider.status == ap.AuthStatus.authenticated) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (_) => false,
-      );
-    } else if (provider.status == ap.AuthStatus.error) {
+    if (provider.status == ap.AuthStatus.error) {
       _showError(provider.errorMessage ?? 'Registration failed.');
       provider.clearError();
     }
+    // On success, AuthWrapper detects the new profile and swaps to MainAppFlow.
   }
 
   void _showError(String message) {

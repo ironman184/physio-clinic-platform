@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../main.dart';
 import '../providers/auth_provider.dart' as ap;
 
 class HomeScreen extends StatefulWidget {
@@ -24,12 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _signOut() async {
     final provider = context.read<ap.AuthProvider>();
     await provider.signOut();
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const AuthWrapper()),
-      (_) => false,
-    );
+    // AuthWrapper detects user == null and swaps to AuthFlow.
   }
 
   @override
