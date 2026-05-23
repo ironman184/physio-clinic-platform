@@ -55,6 +55,7 @@ Defined as `kDemoClinics` constant map in `register_screen.dart`.
 | `gender` | Form dropdown, stored lowercase (`"male"`, `"female"`, `"other"`) | `String` |
 | `dob` | Date picker | `Timestamp` |
 | `role` | Hardcoded `"patient"` | `String` |
+| `status` | Hardcoded `"active"` at registration | `String` |
 | `createdAt` | `DateTime.now()` at registration time | `Timestamp` |
 
 ---
