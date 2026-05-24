@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider;
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -24,7 +25,7 @@ void main() async {
     );
   }
 
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -106,7 +107,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return const _SplashLoader();
             }
             return profileSnapshot.data != null
-                ? const MainAppFlow()
+                ? MainAppFlow(user: profileSnapshot.data!)
                 : const RegistrationFlow();
           },
         );

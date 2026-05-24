@@ -175,12 +175,12 @@ functions/
   "role": "patient",
   "status": "active",
   "createdAt": "2026-05-22T15:11:32",
-  "fcmToken": "device_token_here"
+  "fcmTokens": ["device_token_1", "device_token_2"]
 }
 ```
 
 **Changes from current schema:**
-- Add `fcmToken` (string, nullable) — for push notifications
+- Add `fcmTokens` (array of strings) — FCM device tokens for push notifications on all logged-in devices
 - Status values remain **lowercase**: `active`, `inactive`, `suspended`
 - Roles remain **lowercase**: `patient`, `therapist`, `admin`, `super_admin`
 - Admin/therapist docs are created manually in Firestore console
@@ -678,22 +678,22 @@ class RenewalHoldModel {
 }
 ```
 
-### 5.7 Updated `UserModel` (add `fcmToken`)
+### 5.7 Updated `UserModel` (add `fcmTokens`)
 
 Add to existing `UserModel`:
 
 ```dart
 // Add field:
-final String? fcmToken;
+final List<String> fcmTokens;
 
 // Add to constructor:
-this.fcmToken,
+this.fcmTokens = const [],
 
 // Add to fromMap:
-fcmToken: map['fcmToken'] as String?,
+fcmTokens: List<String>.from(map['fcmTokens'] as List? ?? []),
 
 // Add to toMap:
-if (fcmToken != null) 'fcmToken': fcmToken,
+'fcmTokens': fcmTokens,
 ```
 
 ---
@@ -2493,10 +2493,27 @@ class NotificationService {
   Future<void> _saveToken(String token) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
+    // Add token to the array (arrayUnion avoids duplicates)
     await FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
-        .update({'fcmToken': token});
+        .update({
+      'fcmTokens': FieldValue.arrayUnion([token]),
+    });
+  }
+
+  /// Remove token on sign-out to stop notifications on this device.
+  Future<void> removeToken() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final token = await _messaging.getToken();
+    if (token == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .update({
+      'fcmTokens': FieldValue.arrayRemove([token]),
+    });
   }
 }
 ```
@@ -2517,12 +2534,12 @@ export async function sendSessionNotification(
   date: string,
   slotId: string,
 ): Promise<void> {
-  // Get patient FCM token
+  // Get patient FCM tokens (supports multiple logged-in devices)
   const userDoc = await db.collection("users").doc(patientId).get();
   if (!userDoc.exists) return;
 
-  const fcmToken = userDoc.data()?.fcmToken;
-  if (!fcmToken) return;
+  const fcmTokens: string[] = userDoc.data()?.fcmTokens ?? [];
+  if (fcmTokens.length === 0) return;
 
   // Get slot details for display
   const slotDoc = await db.collection("slots").doc(slotId).get();
@@ -2556,31 +2573,46 @@ export async function sendSessionNotification(
   const msg = messages[status];
   if (!msg) return;
 
-  try {
-    await admin.messaging().send({
-      token: fcmToken,
-      notification: {
-        title: msg.title,
-        body: msg.body,
-      },
-      data: {
-        sessionId,
-        status,
-        date,
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    });
-  } catch (err: any) {
-    // Token may be stale — remove it
+  // Send to all registered devices using sendEachForMulticast
+  const staleTokens: string[] = [];
+
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens: fcmTokens,
+    notification: {
+      title: msg.title,
+      body: msg.body,
+    },
+    data: {
+      sessionId,
+      status,
+      date,
+      click_action: "FLUTTER_NOTIFICATION_CLICK",
+    },
+  });
+
+  // Collect stale tokens for cleanup
+  response.responses.forEach((resp, idx) => {
     if (
-      err.code === "messaging/invalid-registration-token" ||
-      err.code === "messaging/registration-token-not-registered"
+      !resp.success &&
+      resp.error &&
+      (resp.error.code === "messaging/invalid-registration-token" ||
+        resp.error.code === "messaging/registration-token-not-registered")
     ) {
-      await db.collection("users").doc(patientId).update({
-        fcmToken: admin.firestore.FieldValue.delete(),
-      });
+      staleTokens.push(fcmTokens[idx]);
     }
-    console.error(`FCM error for ${patientId}:`, err.message);
+  });
+
+  // Remove stale tokens from the user doc
+  if (staleTokens.length > 0) {
+    await db.collection("users").doc(patientId).update({
+      fcmTokens: admin.firestore.FieldValue.arrayRemove(staleTokens),
+    });
+  }
+
+  if (response.failureCount > 0) {
+    console.warn(
+      `FCM: ${response.successCount} sent, ${response.failureCount} failed for ${patientId}`,
+    );
   }
 }
 ```
@@ -2795,7 +2827,7 @@ Admin and therapist users are **created manually** in Firestore console with the
 
 1. **Add `flutter_riverpod` and `cloud_functions` and `firebase_messaging`** to `pubspec.yaml`
 2. **Wrap app in `ProviderScope`** in `main.dart`
-3. **Add `fcmToken` field** to `UserModel`
+3. **Add `fcmTokens` field** to `UserModel` (array of device tokens)
 4. **Create all new model files** (sections 5.1–5.6)
 5. **Create `scheduling_service.dart`** and **`session_query_service.dart`**
 6. **Create `notification_service.dart`**

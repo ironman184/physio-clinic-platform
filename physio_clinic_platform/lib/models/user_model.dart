@@ -12,6 +12,7 @@ class UserModel {
   final String role;
   final String status;
   final DateTime createdAt;
+  final List<String> fcmTokens;
 
   const UserModel({
     required this.uid,
@@ -25,6 +26,7 @@ class UserModel {
     required this.role,
     required this.status,
     required this.createdAt,
+    this.fcmTokens = const [],
   });
 
   String get fullName => '$firstName $lastName';
@@ -46,6 +48,7 @@ class UserModel {
       createdAt: map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      fcmTokens: List<String>.from(map['fcmTokens'] as List? ?? []),
     );
   }
 
@@ -60,5 +63,6 @@ class UserModel {
         'role': role,
         'status': status,
         'createdAt': Timestamp.fromDate(createdAt),
+        'fcmTokens': fcmTokens,
       };
 }
