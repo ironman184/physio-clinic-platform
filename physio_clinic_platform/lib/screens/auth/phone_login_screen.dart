@@ -16,6 +16,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   String _completePhoneNumber = '';
   ap.AuthProvider? _authProvider;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
   @override
   void dispose() {
+    _hasNavigated = false;
     _authProvider?.removeListener(_onProviderChanged);
     super.dispose();
   }
@@ -37,6 +39,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
     if (!mounted || _authProvider == null) return;
     switch (_authProvider!.status) {
       case ap.AuthStatus.codeSent:
+        if (_hasNavigated) return;
+        _hasNavigated = true;
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -44,7 +48,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               phoneNumber: _completePhoneNumber,
             ),
           ),
-        );
+        ).then((_) => _hasNavigated = false);
       case ap.AuthStatus.error:
         _showError(_authProvider!.errorMessage ?? 'Failed to send OTP.');
         _authProvider!.clearError();

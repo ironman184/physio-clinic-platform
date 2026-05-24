@@ -98,7 +98,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   /// Called when Android auto-verification updates the provider state.
   void _onProviderChanged() {
-    if (!mounted) return;
+    if (!mounted || _isVerifying) return;
     if (_authProvider?.status == ap.AuthStatus.error) {
       _showError(_authProvider?.errorMessage ?? 'Auto-verification failed.');
       _authProvider?.clearError();

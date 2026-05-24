@@ -9,31 +9,29 @@
 
 The app is a well-structured Flutter phone-auth flow (login → OTP → registration → home) using Firebase Auth + Firestore. Architecture follows Provider + StreamBuilder patterns correctly. However, there are several bugs, security issues, and best-practice gaps that need attention before a production release.
 
-**Critical issues:** 2 | **High:** 5 | **Medium:** 6 | **Low:** 4
+**Critical issues:** ~~2~~ 0 ✅ | **High:** 5 | **Medium:** 6 | **Low:** 4
 
 ---
 
 ## 2. Critical Bugs or Broken Flows
 
-### 2.1 `PhoneLoginScreen` listener pushes OTP screen multiple times on hot rebuild
+### ~~2.1 `PhoneLoginScreen` listener pushes OTP screen multiple times on hot rebuild~~ ✅ FIXED
 
 | Field | Value |
 |-------|-------|
 | **File** | `lib/screens/auth/phone_login_screen.dart` |
-| **Problem** | `_onProviderChanged` pushes `OtpVerificationScreen` every time `status == codeSent`, but does NOT guard against duplicate pushes. If the listener fires twice (e.g. hot-reload, or rapid `notifyListeners()`), the OTP screen is pushed onto the stack multiple times. |
-| **Why it matters** | Users see a broken double-push and pressing back reveals a ghost OTP screen. |
-| **Recommended fix** | Add a `bool _hasNavigated = false;` flag. Set it before pushing; reset in `dispose()`. |
-| **Priority** | **Critical** |
+| **Problem** | ~~`_onProviderChanged` pushes `OtpVerificationScreen` every time `status == codeSent`, but does NOT guard against duplicate pushes. If the listener fires twice (e.g. hot-reload, or rapid `notifyListeners()`), the OTP screen is pushed onto the stack multiple times.~~ |
+| **Fix applied** | Added `bool _hasNavigated = false;` flag. Set before pushing; reset via `.then()` on pop and in `dispose()`. |
+| **Priority** | ~~**Critical**~~ **Resolved** |
 
-### 2.2 `OtpVerificationScreen` — race condition between auto-verify and manual verify
+### ~~2.2 `OtpVerificationScreen` — race condition between auto-verify and manual verify~~ ✅ FIXED
 
 | Field | Value |
 |-------|-------|
 | **File** | `lib/screens/auth/otp_verification_screen.dart` |
-| **Problem** | `_onProviderChanged` shows errors and `_verify()` also shows errors. If Android auto-verification fires concurrently with a manual verification attempt, the user can get duplicate/conflicting snackbars or the `_isVerifying` lock is never released. |
-| **Why it matters** | UX confusion; potential stuck state on Android devices with SMS auto-read. |
-| **Recommended fix** | Unify error handling in one place; use `_isVerifying` to suppress `_onProviderChanged` when manual verification is in-flight. |
-| **Priority** | **Critical** |
+| **Problem** | ~~`_onProviderChanged` shows errors and `_verify()` also shows errors. If Android auto-verification fires concurrently with a manual verification attempt, the user can get duplicate/conflicting snackbars or the `_isVerifying` lock is never released.~~ |
+| **Fix applied** | `_onProviderChanged` now guards with `if (!mounted \| _isVerifying) return;`, suppressing auto-verify error handling while a manual verification is in-flight. |
+| **Priority** | ~~**Critical**~~ **Resolved** |
 
 ---
 
@@ -206,8 +204,8 @@ The app is a well-structured Flutter phone-auth flow (login → OTP → registra
 | `lib/providers/auth_provider.dart` | ⚠️ | Dual responsibility (auth + registration) |
 | `lib/services/auth_service.dart` | ✅ | Clean, thin wrapper |
 | `lib/services/user_service.dart` | ✅ | Correct singleton; could accept DI for testing |
-| `lib/screens/auth/phone_login_screen.dart` | 🐛 | Duplicate-push bug; force-unwrap; deprecated API |
-| `lib/screens/auth/otp_verification_screen.dart` | 🐛 | Race condition with auto-verify + manual verify |
+| `lib/screens/auth/phone_login_screen.dart` | ⚠️ | ~~Duplicate-push bug~~ ✅ fixed; force-unwrap; deprecated API |
+| `lib/screens/auth/otp_verification_screen.dart` | ⚠️ | ~~Race condition with auto-verify + manual verify~~ ✅ fixed |
 | `lib/screens/auth/register_screen.dart` | ✅ | Well-validated; minor — no max-length on names |
 | `lib/screens/home_screen.dart` | ⚠️ | Redundant `loadCurrentUser` call |
 | `lib/screens/flows/*.dart` | ✅ | Clean flow wrappers |
@@ -221,8 +219,8 @@ The app is a well-structured Flutter phone-auth flow (login → OTP → registra
 
 | # | Priority | Action | Files |
 |---|----------|--------|-------|
-| 1 | **Critical** | Fix duplicate-push in `PhoneLoginScreen._onProviderChanged` | `phone_login_screen.dart` |
-| 2 | **Critical** | Fix race condition between auto-verify and manual verify in OTP screen | `otp_verification_screen.dart` |
+| 1 | ~~**Critical**~~ ✅ | ~~Fix duplicate-push in `PhoneLoginScreen._onProviderChanged`~~ | `phone_login_screen.dart` |
+| 2 | ~~**Critical**~~ ✅ | ~~Fix race condition between auto-verify and manual verify in OTP screen~~ | `otp_verification_screen.dart` |
 | 3 | **High** | Add error UI + retry in `AuthWrapper` when Firestore stream errors | `main.dart` |
 | 4 | **High** | Add `firestore.rules` restricting `/users/{uid}` to owner | new file `firestore.rules` |
 | 5 | **High** | Replace stale widget test with valid smoke test | `test/widget_test.dart` |
