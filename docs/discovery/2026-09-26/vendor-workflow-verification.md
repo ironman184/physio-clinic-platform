@@ -1,0 +1,130 @@
+# Vendor workflow verification and product decisions
+
+Checked: **2026-09-26**. Status: **research and proposals; no new product requirements approved**.
+
+This report checks the scheduling, change-policy, identity, entitlement and notification claims most relevant to restarting the product design. It follows the supplied [research index](../../../Physiotherapy_Research_Other_Comapnies/physio-research/INDEX.md), its five relevant workflow files, and selected Cliniko, Jane, Zanda, splose and Prompt company sections. The supplied research remains unchanged.
+
+The most consequential finding is that established products make different choices about the same patient action. There is no single competitor rule to copy for cancellation, rescheduling or using a prepaid visit. Decide the clinic's operating policy before designing the balance screen or scheduling API.
+
+## Method and limits
+
+I opened 28 distinct official URLs: 27 returned substantive documentation or product/announcement content; Prompt's patient-login URL returned no readable content. The claim register below records the reviewed subset, **not verification of all 138 sources or all ten companies**. Sources were opened and their relevant body sections read; search snippets were not used as evidence. No authenticated account, patient record, real booking, payment or vendor support conversation was used.
+
+All register rows have the same checked date: **2026-09-26**. A support guide establishes documented behaviour, not a guarantee that every region, plan, legacy interface or deployment behaves identically. A product page establishes an advertised claim; an announcement does not establish general availability. No vendor's database, transaction implementation or security architecture was inspected.
+
+Labels:
+
+- **Confirmed:** the current official page supports the scoped original claim.
+- **Qualified:** supported with a material boundary, stronger nuance or evidence-type limitation.
+- **Conflicting:** current official sources give incompatible answers.
+- **Unverified:** this check could not establish the claim; this is not evidence of absence.
+
+The source codes refer to the supplied company files. Price comparisons, regional payment-law interpretation and procurement recommendations are outside this report.
+
+## Claim register
+
+### Cliniko
+
+| Original claim | Result | Evidence and boundary |
+| --- | --- | --- |
+| CL03: patients can book without creating an account; existing records can be matched. | **Confirmed — support guide** | The booking form collects details and either associates the booking with an existing record or creates one. This establishes booking without login, not permission to browse a clinical record. The same page says offered times depend on availability and service duration. [Online bookings overview](https://help.cliniko.com/en/articles/1023955-a-quick-overview-of-online-bookings). |
+| CL08: staff can make repeating bookings by interval/count. | **Confirmed — support guide** | Daily, weekly, fortnightly and monthly patterns are documented. This guide does not establish every conflict-resolution or series-edit case. [Repeating appointments](https://help.cliniko.com/en/articles/1777286-book-repeating-appointments). |
+| CL09: staff can reschedule, but patients cannot directly do so. | **Confirmed — support guide** | The guide explicitly excludes patient self-rescheduling. Staff can drag a booking or use its reschedule action. Updated email confirmations and practitioner notifications depend on configuration; the guide describes a short delivery delay. [Reschedule an appointment](https://help.cliniko.com/en/articles/9492754-reschedule-an-appointment). |
+| CL10: patient cancellation depends on notice and prepayment type. | **Qualified — support guide** | Full payment through online bookings/payment links prevents self-cancellation; so does partial online payment followed by invoice closure. Deposits, account-credit payments and payment outside Cliniko's online methods can still allow the cancellation link. A configurable notice period also applies. Therefore “paid appointments cannot be cancelled” would be an incorrect generalization. This page does not establish package-credit restoration. [Patient cancellations](https://help.cliniko.com/en/articles/1023945-let-patients-cancel-their-appointments). |
+| CL13: the documented waitlist is staff-managed. | **Confirmed — support guide** | Staff store preferences, filter candidates and create a booking from the list. A later existing appointment may need separate cancellation/archive action. This guide does not demonstrate automatic invitations or temporary exclusive offers. [Using the wait list](https://help.cliniko.com/en/articles/1402450-using-the-wait-list). |
+
+### Jane
+
+| Original claim | Result | Evidence and boundary |
+| --- | --- | --- |
+| JA08: recurring bookings preview availability, conflicts and unavailable staff. | **Qualified — support guide** | The preview checks designated shifts; shift/treatment tags also affect eligibility. Recurrence is an administrative feature: patients book repeats individually. A group of bookings made within the documented three-minute notification window is combined into one email. This is not proof that every series mutation is atomic. [Recurring appointments](https://jane.app/guide/recurring-appointments). |
+| JA04: portal users can cancel/reschedule subject to clinic settings and cutoff. | **Confirmed — support guide** | Inside the cancellation period the portal directs the patient to contact the clinic. The guide also documents a three-minute cancellation grace period after booking, regardless of the clinic cutoff. A separate portal account exists for each clinic. These statements do not specify refunds or entitlement changes. [Patient portal](https://jane.app/guide/my-account-your-patient-client-portal). |
+| JA05/JA06: the mobile app account is distinct from linked clinic accounts; regional limits apply. | **Confirmed — support guides** | The app has separate login credentials and links existing clinic accounts. The getting-started guide states Canada and US availability. This is a particular multi-clinic identity design, not a requirement that our product introduce two passwords. [App sign-in](https://jane.app/guide/jane-s-mobile-app-for-patients-signing-in-and-troubleshooting), [Getting started](https://jane.app/guide/jane-s-mobile-app-for-clients-getting-started). |
+| JA10: waitlist notification tools have plan and channel restrictions. | **Confirmed — support guide** | Waitlist storage is on all plans; notifications are listed for Thrive and eligible legacy plans. Automatic sending is optional. The guide excludes class/group waitlist notifications and qualifies regional SMS availability. [Waitlist notification setup](https://jane.app/guide/setting-up-your-wait-list-notifications). |
+| JA11: openings can be temporarily held for waitlist offers. | **Qualified — support guide** | The exclusive period restricts access to eligible **waitlist clients as a group**, not necessarily to one named patient. Manual “send now” notifies all listed eligible clients together. Staff can instead book one candidate or release the opening. Do not infer a one-person reservation or queue fairness guarantee. [Using waitlist notifications](https://jane.app/guide/using-wait-list-notifications). |
+
+### Zanda
+
+| Original claim | Result | Evidence and boundary |
+| --- | --- | --- |
+| ZA03: registration uses an email/password plus verification and can match existing clients. | **Confirmed — support guide** | Verification can be email or SMS; mobile is required for SMS. The guide describes matching name, email and mobile when supplied, and an existing-record invitation flow. Successful self-registration does not require a staff approval step. This describes the vendor workflow; it is not evidence that a shared phone/email safely proves every family relationship. [Client registration](https://zandahealth.com/support/client-portal/client-portal-registration-for-new-clients/). |
+| ZA05: self-rescheduling changes time/date while preserving practitioner, service and location. | **Qualified — support guide** | Applies to eligible active future individual appointments under configured notice/settings. Group appointments and unsuitable service/session-pack configurations can be ineligible. Existing payment remains attached to the same appointment; activity logs record the move. Authorized connected contacts/shared-profile members can also act. This establishes a confirmed move, not an approval request. The guide's status restrictions leave repeat-rescheduling edge cases worth demonstrating. [Portal rescheduling](https://zandahealth.com/support/client-portal/reschedule-appointments-on-client-portal/). |
+| ZA06: series edits support one, following, or all occurrences; invoices constrain changes. | **Qualified — support guide** | Edit scope varies with the UI action: dragging/resizing and saving in the settings panel show different prompts. Applying a change to following visits can rebuild them. Paid or multi-item invoices can prevent automatic processing. Some fields, such as comments, do not propagate. “Edit all” should not be read as an unrestricted edit of every field. [Recurring appointment edits](https://zandahealth.com/support/appointments-and-reminders/creating-editing-and-deleting-recurring-appointments/). |
+| ZA07: cancellation does not automatically refund portal payments. | **Confirmed — support guide** | The appointment becomes cancelled; the system attempts deletion of eligible unpaid invoices. Paid invoices/payment capture remain, and staff must handle refund processing and its recording. Claim-linked invoices can also prevent deletion. Outside the online cutoff, the appointment stays active until staff cancel it. [Cancellation and payments](https://zandahealth.com/support/client-portal/client-portal-appointment-cancellations-and-payments-management/). |
+| ZA09: cancelling by SMS does not automatically remove the invoice. | **Confirmed — support guide** | The SMS-reply route preserves existing invoices. The same FAQ says automatic reminders apply to Pending and Confirmed appointments, not Cancelled/No Show/Completed ones. “Pending” here is the vendor's appointment status; it must not be assumed to mean our proposed staff-approval request. [SMS reminder FAQ](https://zandahealth.com/support/appointments-and-reminders/sms-reminders-faqs/). |
+| ZA11: session-pack units can be used at invoice allocation, before attendance. | **Confirmed — support guide** | A pack is used up when its last unit is allocated to an invoice, including a future visit. Expiry and optional automatic creation of another pack have separate rules. The guide permits an active pack to be allocated to a visit after its expiry date. This is a materially different policy from “deduct only on attendance” or “visit date must precede expiry”; neither rule is universal. The page does not establish automatic unit restoration for every cancellation route. [Pack expiry and automatic creation](https://zandahealth.com/support/faqs-and-troubleshooting/session-packs-expiry-and-automatic-creation-explained/). |
+
+### splose
+
+| Original claim | Result | Evidence and boundary |
+| --- | --- | --- |
+| SP04: branded booking pages use location/service/practitioner eligibility; busy time can block another location. | **Confirmed — support guide** | Busy appointments, support activities or busy time at one location block that practitioner's online availability at others. The guide also describes existing-client matching, including duplicate creation when entered details differ. Public booking and the waitlist screener are separate flows. [Updated online booking setup](https://support.splose.com/en/articles/11742846-set-up-online-bookings-updated). |
+| SP07: recurring and one-off working availability are supported. | **Confirmed — support guide** | Weekly/fortnightly rules and specific-date exceptions are documented, with location selection. Future recurring availability changes do not alter past availability. This does not prove how existing bookings are reconciled after a shift change. [Availability setup](https://support.splose.com/en/articles/4736435-set-up-your-availability). |
+| SP06: appointments, support activities and staff rescheduling are distinct. | **Confirmed — support guide** | Support activities do not send patient appointment notifications. Staff recurrence can expose clashes before confirmation. A staff reschedule retains the appointment and history and sends an update if its template is configured. [Create and reschedule an appointment](https://support.splose.com/en/articles/4737776-create-and-reschedule-an-appointment). |
+| SP05: patient moves are bounded; paid cancellation and prepayment have separate effects. | **Qualified — support guide** | Self-rescheduling is for bookings made through the updated booking system. Practitioner, service and location remain fixed; changed service price blocks the move. A configured notice period applies, and old message links fail after a move. Cancelling a paid booking does not automatically refund it. Online prepayment is monetary credit linked to a draft invoice; marking Arrived applies the credit and finalizes that invoice. A prepaid no-show leaves credit for staff handling. This is **money credit**, not proof of a restored treatment-session entitlement. [Client cancellation/rescheduling](https://support.splose.com/en/articles/14117383-allow-your-clients-to-cancel-or-reschedule-their-own-appointments). |
+| SP09: reasons, timing and fee rules can determine billable cancellation. | **Confirmed — support guide** | Reasons can be billable, non-billable or rule-driven. Rules can use calendar or business days and a percentage fee. This supports configurable software behaviour, not adoption of a regional funded-care rule for this clinic. [Cancellation reasons and rules](https://support.splose.com/en/articles/4736419-set-up-cancellation-reasons-and-rules-for-appointments). |
+| SP11: invoice reminders are separate and accounting integration can duplicate them. | **Confirmed — support guide** | Both splose and Xero reminders can cause duplicates. Invoice recipients/preferences, invoice state and due dates affect delivery. The guide describes automated email reminders, not an automated SMS invoice-reminder schedule. [Invoice reminders](https://support.splose.com/en/articles/8635978-set-up-invoice-reminders). |
+| SP03: class-booking/package improvements were forthcoming in the September announcement. | **Qualified — announcement** | The 17 September 2026 announcement puts class bookings and packages under future work for coming quarters. It cannot establish those announced changes as shipped on this check date; it also does not prove no earlier group/package-related capability exists. Pricing was not used for this analysis. [September announcement](https://splose.com/resources/the-handover/splose-2026-pricing-update). |
+
+### Prompt
+
+| Original claim | Result | Evidence and boundary |
+| --- | --- | --- |
+| PR02/PR03: official pages disagree on patient self-rescheduling. | **Conflicting — product/feature pages** | The EMR page says patients reschedule online; the scheduling FAQ says cancellation/rescheduling requires calling the clinic. Both statements were present during this check. Do not choose one based on preference: obtain a current, named-version/module demonstration if that capability matters. [EMR product](https://www.prompthealth.com/products/emr), [Scheduling FAQ](https://www.prompthealth.com/features/scheduling). |
+| PR03: direct booking and staff-approved requests are configurable alternatives. | **Qualified — feature page** | The scheduling FAQ advertises patient booking and an option to approve all requests, plus provider/location/messaging rules. It does not establish the request-expiry, reservation or concurrent-approval semantics. [Scheduling FAQ](https://www.prompthealth.com/features/scheduling). |
+| PR06: the patient entry screen uses contact details/DOB and then a code. | **Unverified in this check — application entry page** | The URL opened but returned no readable page content. The prior snapshot may be accurate; this run did not reproduce the screen or verify the flow. No authentication or code request was submitted. [Patient entry](https://go.promptemr.com/patientLogin). |
+| PR09: Version 10 promotes bulk recurring visits and conflict handling. | **Qualified — announcement/product page** | The page advertises creation/modification of recurring visits with calendar conflicts. It does not prove enabled functionality, exact edit scopes or financial handling for a specific customer deployment. [Version 10](https://www.prompthealth.com/version-10). |
+
+## What the evidence means for this product
+
+The following are **design inferences and discussion proposals**, not claims about vendor internals and not approved changes to our existing specifications.
+
+1. **Availability, a booked appointment and a course of care need separate meanings.** Repeating a calendar pattern is not the same as prescribing a frequency, purchasing a pack, or guaranteeing room/equipment capacity. Define what one-to-one physiotherapy needs before adding classes or home visits.
+2. **Cancellation is an operational event with several possible consequences.** Releasing a therapist's time, charging a fee, releasing a reserved unit, refunding money and booking a replacement should each have an explicit rule and visible outcome.
+3. **Rescheduling needs a stable meaning.** A date/time move may retain the appointment; a change to therapist/service/price may need a separate workflow. Either storage approach can work if history, links, reminders, invoices and entitlement references remain consistent. Competitor UI evidence does not decide our database schema.
+4. **A patient is not a phone number or a login account.** Reception-created records, changed contact details, family booking and multiple clinics require an explicit relationship between the authenticated actor and the patient record.
+5. **Notifications must report committed outcomes.** A failed message should not make a successful cancellation look unsuccessful, and a retry should not perform the cancellation twice. Scheduled messages must be revalidated after a move. These are proposed reliability requirements, not verified guarantees of every vendor reviewed.
+6. **A waitlist is a progression of capabilities.** Storing preferences, matching openings, notifying a group and reserving for one person are separate designs. Implementing the simplest useful one first reduces policy questions.
+
+## Decisions to settle before implementation
+
+This matrix deliberately presents alternatives. Suggested starting points apply only to an initial clinic pilot and require the owner's acceptance; discovery may show a different choice is better.
+
+| Decision | Meaningful options | Suggested starting point and reason |
+| --- | --- | --- |
+| Who can create a confirmed booking? | Staff only; patient request with approval; direct patient booking for eligible services. | Start with staff confirmation if therapist/service suitability is still assessed manually. Patient requests must clearly say they are awaiting confirmation and define whether time is held. Direct booking becomes attractive when eligibility rules are known. |
+| What does an empty slot mean? | Fixed universal slots; service-duration intervals; intervals plus buffers/resources/travel. | Prove whether all first-pilot visits have one duration. If not, model start/end and service duration rather than silently equating a shared slot ID with availability. |
+| What does a recurring plan promise? | Book every date now; book a rolling horizon; schedule each next visit. | Use a finite preview of explicit occurrences, with conflicts shown before confirmation. Decide whether a conflict blocks the whole series or allows accepted dates plus named exceptions. |
+| What may a patient move? | Staff-only; date/time with unchanged therapist/service/location; unrestricted replacement request. | Begin with staff changes or a bounded date/time move. Decide separately whether a therapist change needs clinical review and whether the old appointment remains booked while a request is pending. |
+| What counts as late? | Elapsed hours; calendar days; business days; reason-specific exemptions. | Choose one precise rule for the pilot, including clinic timezone and equality at the cutoff. Do not invent a 24/48-hour policy from competitors. |
+| What happens on late cancellation/no-show? | No fee; fee; unit consumed; exception/waiver; replacement allowed or denied. | Have staff record the outcome and an override reason initially. A no-show should not create an automatic replacement until that is an explicitly accepted business policy. |
+| How do prepaid units behave? | Consume at booking/invoice; reserve at booking and consume at completion; consume only at completion. | If prepaid packs are in scope, discuss separate available/reserved/used counts. A move within the same eligibility should transfer a reservation once; release, charge and expiry rules still need agreement. |
+| Does cancelling refund money? | Manual review; automatic refund for eligible cases; retain monetary account credit. | Keep staff financial review until refund policy is clear. Show “refund pending/handled” separately from “appointment cancelled.” Returning a visit unit is an independent decision. |
+| Does a completed plan reserve future capacity? | No reservation; priority notification; short specific holds; recurring protected capacity. | Test priority notification or explicit short holds before a blanket recurring hold. Specify exact occurrences, owner, expiry and competing patients; assess lost capacity. |
+| How does a patient obtain access? | Appointment-specific link; verified portal; native-app account. | Choose based on tasks, recovery and family access, not competitor branding. Require a durable patient ID and explicit actor-to-patient permissions whichever surface is chosen. |
+| How are openings filled? | Staff preference list; staff sends offers; automated cohort offer; one-patient expiring reservation. | A staff-managed list is a useful first step. Add automated offers only after defining fairness, acceptance races, expiry and consent. |
+
+## Concrete scenarios for the policy discussion
+
+These are proposed acceptance exercises for our product, not claims that vendors passed them. Use the same examples when evaluating a prototype or vendor demo.
+
+| Scenario | Questions whose answers change the design |
+| --- | --- |
+| Eight weekly appointments; the third date is a holiday and the fifth has therapist leave. | Is there a seven/eight-visit target or a fixed end date? Skip, move or block? Who accepts exceptions? Does moving the third affect the fourth? |
+| A patient and receptionist both select the last free 10:00 slot. | Which action confirms first? What does the other person see? Can a request reserve it, and when does that reservation expire? |
+| A visit is cancelled exactly at the policy cutoff; a second attempt arrives after it. | Which clock/timezone governs? Is equality eligible? Does retrying preserve the first result and avoid a second fee/credit? |
+| The clinic cancels because the therapist is ill. | Does clinic fault always waive fees and preserve entitlement? Who offers replacement dates? Does the original series continue? |
+| A ten-session pack has six used units and four future bookings; one is moved past expiry. | Are those four reserved? Is expiry assessed on allocation or service date? Is an extension allowed, by whom, and with what audit reason? |
+| A fully paid appointment is cancelled, then its payment-provider refund fails. | Is the time already released? Does staff see an unresolved refund task? Can retrying cause duplicate refunds or restore a unit twice? |
+| A no-show is recorded incorrectly and reversed the next day. | Can staff reverse attendance, fee and unit changes without rewriting history? Is a previously generated replacement still valid? |
+| A parent uses one phone for two children, then changes number. | Which patient is being booked? Who has permission? How does recovery avoid duplicate records and access to an unrelated child? |
+| Two waitlisted patients accept the same offer while an old link is reused. | Is the offer for a group or one person? Who wins? Are stale/expired links harmless and are unavailable alternatives explained? |
+| A reminder is queued; the appointment moves twice; the messaging provider retries. | Which time does the patient receive? Are earlier reminder jobs invalidated? Can staff see delivery failure without changing booking state? |
+
+## Relationship to the existing draft
+
+The existing [scheduling implementation specification](../../../specs/scheduling_specs.md) labels itself **Draft — pending review**. Its overview and case descriptions already choose fixed slot definitions, admin-led changes, cancellation/no-show replacements, a 30-day renewal hold and a Firebase-based engine. Those are real design assumptions worth discussing, even where implementation has moved beyond the document.
+
+The vendor evidence does **not** establish automatic replacement after every cancellation/no-show, a universal two-no-show allowance, or a 30-day recurring renewal hold as industry standards. It also does not invalidate those policies if a real clinic deliberately wants them. Keep them as explicit candidates and assess their capacity, fairness and financial consequences instead of copying or deleting them silently.
+
+The most useful next evidence would be a walkthrough with the intended clinic owner/receptionist using the scenarios above, including their current cancellation and pack policies. Public documentation can verify how products describe workflows; it cannot decide which policy this particular clinic should promise its patients.

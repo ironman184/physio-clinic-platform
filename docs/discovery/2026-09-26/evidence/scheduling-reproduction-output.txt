@@ -1,0 +1,10 @@
+Import-order probe: firestore requested before initializeApp. Adapter models documented SDK precondition; actual SDK not installed.
+Reschedule: original slot remains booked; moving the original twice leaves 3 records treated as active.
+Duplicate completion: same session marked twice produces completedSessions=2 and completes a 2-session plan.
+Object authorization: admin of clinic A successfully marks clinic B session complete using clinicId=A.
+Failed cancellation extension: command rejects but original remains cancelled and counter incremented, with no replacement.
+No-show with zero allowance/no active dates: remainingNoShows=-1 and replacement generated on historical plan start 2020-01-06.
+Notification failure: command rejects with FCM_UNAVAILABLE after session and counters commit.
+Concurrent creation: identical idempotency key creates two plans and double-books the same therapist/date/slot.
+Repeated full reschedule: one appointment becomes four records treated as active after two moves.
+All eight behavioral probes passed. These execute original TypeScript with a fake database; not Firestore/emulator integration tests.
